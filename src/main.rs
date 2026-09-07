@@ -3,12 +3,12 @@ use bevy::prelude::*;
 
 mod glyphs;
 mod input;
+mod pixel_ui;
 mod theme;
-mod ui;
 
 use input::InputAction;
+use pixel_ui::{build_scene, CurrentScene, NavigationState, Scene, UiRoot};
 use theme::Theme;
-use ui::{build_scene, CurrentScene, NavigationState, Scene, UiRoot};
 
 fn main() {
     App::new()
@@ -18,8 +18,8 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "D&D RPG Engine — CP437 / Unicode Frontend".into(),
-                resolution: (1600, 900).into(),
-                resizable: true,
+                resolution: (pixel_ui::DESIGN_WIDTH as u32, pixel_ui::DESIGN_HEIGHT as u32).into(),
+                resizable: false,
                 ..default()
             }),
             ..default()
