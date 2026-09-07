@@ -386,8 +386,8 @@ fn dialog(g: &mut Grid, t: &Theme, selected: usize) {
 fn settings(g: &mut Grid, t: &Theme, selected: usize) {
     panel(g, t, 21, 4, 58, 19, "SETTINGS");
     for (i, item) in ["Audio", "Display", "Controls", "Back"].iter().enumerate() {
-        let key = if i == 3 { "0" } else { &(i + 1).to_string() };
-        g.selection(27, 8 + i, 46, selected == i, key, item, t);
+        let key = if i == 3 { "0".to_string() } else { (i + 1).to_string() };
+        g.selection(27, 8 + i, 46, selected == i, &key, item, t);
     }
     g.text(28, 15, "PLACEHOLDER · NO SETTINGS ARE MUTATED", t.dim);
 }
