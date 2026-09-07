@@ -1,6 +1,7 @@
 // src/main.rs
 use bevy::prelude::*;
 
+mod glyphs;
 mod input;
 mod theme;
 mod ui;
@@ -93,16 +94,13 @@ fn navigation_system(
         }
         InputAction::Left | InputAction::Right => {
             // Reserved for future horizontal tab/character-creation navigation.
-            // This prototype intentionally does not mutate any game state.
         }
         InputAction::Select => {
             if let Some(target) = nav.selected_target(scene.scene) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, target);
             }
         }
-        InputAction::QuitApp | InputAction::None => {
-            // Deliberately no application quit/gameplay side effect in the wireframe prototype.
-        }
+        InputAction::QuitApp | InputAction::None => {}
     }
 }
 
