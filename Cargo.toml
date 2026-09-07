@@ -1,0 +1,11 @@
+# Cargo.toml
+[package]
+name = "dnd-engine-dsh-frontend"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Terminal-inspired D&D RPG frontend wireframes built with Rust, Bevy, and Winit."
+
+[dependencies]
+bevy = { version = "0.19.1", features = ["system_font_discovery"] }
+winit = "0.30.13"
