@@ -21,9 +21,7 @@ pub enum InputAction {
 }
 
 /// Convert physical keyboard keys into frontend navigation actions.
-///
-/// This layer intentionally contains no gameplay behavior. It only exposes
-/// scene/navigation intents to the Bevy application.
+/// This layer intentionally contains no gameplay behavior.
 pub fn read_action(keys: &bevy::prelude::ButtonInput<KeyCode>) -> Option<InputAction> {
     let action = if keys.just_pressed(KeyCode::ArrowUp) || keys.just_pressed(KeyCode::KeyW) {
         InputAction::Up
@@ -31,7 +29,7 @@ pub fn read_action(keys: &bevy::prelude::ButtonInput<KeyCode>) -> Option<InputAc
         InputAction::Down
     } else if keys.just_pressed(KeyCode::ArrowLeft) || keys.just_pressed(KeyCode::KeyA) {
         InputAction::Left
-    } else if keys.just_pressed(KeyCode::ArrowRight) || keys.just_pressed(KeyCode::KeyD) {
+    } else if keys.just_pressed(KeyCode::ArrowRight) || keys.just_pressed(KeyCode::KeyE) {
         InputAction::Right
     } else if keys.just_pressed(KeyCode::Escape) {
         InputAction::Back
