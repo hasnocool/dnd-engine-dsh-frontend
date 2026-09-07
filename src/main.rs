@@ -1,6 +1,5 @@
 // src/main.rs
 use bevy::prelude::*;
-use winit::keyboard::KeyCode as WinitKeyCode;
 
 mod input;
 mod theme;
@@ -17,7 +16,7 @@ fn main() {
         .insert_resource(NavigationState::default())
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "D&D RPG Engine — Frontend Wireframes".into(),
+                title: "D&D RPG Engine — CP437 / Unicode Frontend".into(),
                 resolution: (1600, 900).into(),
                 resizable: true,
                 ..default()
@@ -29,7 +28,12 @@ fn main() {
         .run();
 }
 
-fn setup(mut commands: Commands, theme: Res<Theme>, assets: Res<AssetServer>, mut nav: ResMut<NavigationState>) {
+fn setup(
+    mut commands: Commands,
+    theme: Res<Theme>,
+    assets: Res<AssetServer>,
+    mut nav: ResMut<NavigationState>,
+) {
     commands.spawn(Camera2d);
     nav.reset(Scene::Title);
     build_scene(&mut commands, &theme, &assets, Scene::Title, &nav);
@@ -47,12 +51,12 @@ fn navigation_system(
     let Some(action) = input::read_action(&keyboard) else { return };
 
     match action {
-        InputAction::Up => {
+        InputAction::Up | InputAction::Previous => {
             if nav.move_up(scene.scene) {
                 redraw_scene(&mut commands, &roots, &theme, &assets, scene.scene, &nav);
             }
         }
-        InputAction::Down => {
+        InputAction::Down | InputAction::Next => {
             if nav.move_down(scene.scene) {
                 redraw_scene(&mut commands, &roots, &theme, &assets, scene.scene, &nav);
             }
@@ -62,23 +66,23 @@ fn navigation_system(
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, previous);
             }
         }
-        InputAction::Number(index) => {
-            if let Some(target) = nav.number_target(scene.scene, index) {
+        InputAction::Number(number) => {
+            if let Some(target) = nav.number_target(scene.scene, number) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, target);
             }
         }
         InputAction::Inventory => {
-            if scene.scene == Scene::GameBoard {
+            if matches!(scene.scene, Scene::GameBoard | Scene::Combat) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, Scene::StatsInventory);
             }
         }
         InputAction::Map => {
-            if matches!(scene.scene, Scene::GameBoard | Scene::StatsInventory) {
+            if matches!(scene.scene, Scene::GameBoard | Scene::StatsInventory | Scene::Inventory) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, Scene::Map);
             }
         }
         InputAction::Combat => {
-            if scene.scene == Scene::GameBoard {
+            if matches!(scene.scene, Scene::GameBoard | Scene::StatsInventory | Scene::Inventory) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, Scene::Combat);
             }
         }
@@ -87,16 +91,18 @@ fn navigation_system(
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, Scene::Dialog);
             }
         }
+        InputAction::Left | InputAction::Right => {
+            // Reserved for future horizontal tab/character-creation navigation.
+            // This prototype intentionally does not mutate any game state.
+        }
         InputAction::Select => {
             if let Some(target) = nav.selected_target(scene.scene) {
                 switch_scene(&mut commands, &mut scene, &mut nav, &roots, &theme, &assets, target);
             }
         }
-        InputAction::QuitApp => {
-            // Intentionally does not quit: this frontend only implements scene navigation.
-            let _ = WinitKeyCode::F10;
+        InputAction::QuitApp | InputAction::None => {
+            // Deliberately no application quit/gameplay side effect in the wireframe prototype.
         }
-        InputAction::None => {}
     }
 }
 
