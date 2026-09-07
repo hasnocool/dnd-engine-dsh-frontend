@@ -4,8 +4,9 @@ name = "dnd-engine-dsh-frontend"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-description = "Terminal-inspired D&D RPG frontend wireframes built with Rust, Bevy, and Winit."
+description = "Terminal-inspired D&D RPG frontend wireframes built with Rust, Bevy, Winit, and a fixed-cell CP437 renderer."
 
 [dependencies]
 bevy = { version = "0.19.1", features = ["system_font_discovery"] }
 winit = "0.30.13"
+neovision-core = { version = "1.1.0", features = ["font"] }
