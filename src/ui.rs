@@ -23,97 +23,54 @@ pub struct NavigationState {
 }
 
 impl NavigationState {
-    pub fn reset(&mut self, scene: Scene) {
-        self.selected = 0;
-        if scene.menu_items().is_empty() {
-            self.selected = 0;
-        }
-    }
+    pub fn reset(&mut self, _scene: Scene) { self.selected = 0; }
 
     pub fn move_up(&mut self, scene: Scene) -> bool {
-        let count = scene.menu_items().len();
-        if count == 0 {
-            return false;
-        }
-        self.selected = if self.selected == 0 { count - 1 } else { self.selected - 1 };
+        let len = scene.menu_items().len();
+        if len == 0 { return false; }
+        self.selected = if self.selected == 0 { len - 1 } else { self.selected - 1 };
         true
     }
 
     pub fn move_down(&mut self, scene: Scene) -> bool {
-        let count = scene.menu_items().len();
-        if count == 0 {
-            return false;
-        }
-        self.selected = (self.selected + 1) % count;
+        let len = scene.menu_items().len();
+        if len == 0 { return false; }
+        self.selected = (self.selected + 1) % len;
         true
     }
 
     pub fn selected_target(&self, scene: Scene) -> Option<Scene> {
-        if let Some(item) = scene.menu_items().get(self.selected) {
-            return Some(item.target);
-        }
-
-        match scene {
+        scene.menu_items().get(self.selected).map(|item| item.target).or_else(|| match scene {
             Scene::Title => Some(Scene::MainMenu),
+            Scene::GameBoard | Scene::StatsInventory | Scene::Inventory | Scene::Map | Scene::Combat | Scene::Dialog => Some(Scene::GameBoard),
             Scene::CharacterCreation => Some(Scene::GameBoard),
-            Scene::GameBoard => Some(Scene::Combat),
-            Scene::StatsInventory | Scene::Map | Scene::Combat | Scene::Dialog => {
-                Some(Scene::GameBoard)
-            }
             Scene::Settings | Scene::Credits => Some(Scene::MainMenu),
             Scene::Exit => Some(Scene::Title),
             Scene::MainMenu => None,
-        }
+        })
     }
 
     pub fn number_target(&self, scene: Scene, number: usize) -> Option<Scene> {
-        if number == 0 {
-            return scene.menu_items().iter().find(|item| item.hotkey == "0").map(|item| item.target);
-        }
-        scene.menu_items().iter()
-            .find(|item| item.hotkey == number.to_string())
-            .map(|item| item.target)
+        let key = number.to_string();
+        scene.menu_items().iter().find(|item| item.hotkey == key).map(|item| item.target)
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Scene {
-    Title,
-    MainMenu,
-    CharacterCreation,
-    GameBoard,
-    StatsInventory,
-    Map,
-    Inventory,
-    Combat,
-    Dialog,
-    Settings,
-    Credits,
-    Exit,
+    Title, MainMenu, CharacterCreation, GameBoard, StatsInventory, Map, Inventory, Combat, Dialog, Settings, Credits, Exit,
 }
 
 #[derive(Clone, Copy)]
-pub struct NavItem {
-    pub label: &'static str,
-    pub target: Scene,
-    pub hotkey: &'static str,
-}
+pub struct NavItem { pub label: &'static str, pub target: Scene, pub hotkey: &'static str }
 
 impl Scene {
     pub fn title(self) -> &'static str {
         match self {
-            Scene::Title => "D&D RPG ENGINE",
-            Scene::MainMenu => "MAIN MENU",
-            Scene::CharacterCreation => "CREATE YOUR HERO",
-            Scene::GameBoard => "MAIN GAME BOARD",
-            Scene::StatsInventory => "STATS & INVENTORY",
-            Scene::Map => "MAP / WORLD VIEW",
-            Scene::Inventory => "INVENTORY",
-            Scene::Combat => "COMBAT / BATTLE",
-            Scene::Dialog => "DIALOG / NPC INTERACTION",
-            Scene::Settings => "SETTINGS",
-            Scene::Credits => "CREDITS",
-            Scene::Exit => "END SESSION",
+            Scene::Title => "D&D RPG ENGINE", Scene::MainMenu => "MAIN MENU", Scene::CharacterCreation => "CREATE YOUR HERO",
+            Scene::GameBoard => "MAIN GAME BOARD", Scene::StatsInventory => "STATS & INVENTORY", Scene::Map => "MAP / WORLD VIEW",
+            Scene::Inventory => "INVENTORY", Scene::Combat => "COMBAT / BATTLE", Scene::Dialog => "DIALOG / NPC INTERACTION",
+            Scene::Settings => "SETTINGS", Scene::Credits => "CREDITS", Scene::Exit => "END SESSION",
         }
     }
 
@@ -123,9 +80,7 @@ impl Scene {
             Scene::MainMenu => Some(Scene::Title),
             Scene::CharacterCreation => Some(Scene::MainMenu),
             Scene::GameBoard => Some(Scene::MainMenu),
-            Scene::StatsInventory | Scene::Inventory | Scene::Map | Scene::Combat | Scene::Dialog => {
-                Some(Scene::GameBoard)
-            }
+            Scene::StatsInventory | Scene::Map | Scene::Inventory | Scene::Combat | Scene::Dialog => Some(Scene::GameBoard),
             Scene::Settings | Scene::Credits | Scene::Exit => Some(Scene::MainMenu),
         }
     }
@@ -161,10 +116,8 @@ impl Scene {
             NavItem { label: "Back", target: Scene::MainMenu, hotkey: "0" },
         ];
         const COMBAT: &[NavItem] = &[
-            NavItem { label: "Attack", target: Scene::GameBoard, hotkey: "1" },
-            NavItem { label: "Defend", target: Scene::GameBoard, hotkey: "2" },
-            NavItem { label: "Skills", target: Scene::GameBoard, hotkey: "3" },
-            NavItem { label: "Items", target: Scene::Inventory, hotkey: "4" },
+            NavItem { label: "Attack", target: Scene::GameBoard, hotkey: "1" }, NavItem { label: "Defend", target: Scene::GameBoard, hotkey: "2" },
+            NavItem { label: "Skills", target: Scene::GameBoard, hotkey: "3" }, NavItem { label: "Items", target: Scene::Inventory, hotkey: "4" },
             NavItem { label: "Flee", target: Scene::GameBoard, hotkey: "5" },
         ];
         const DIALOG: &[NavItem] = &[
@@ -173,521 +126,96 @@ impl Scene {
             NavItem { label: "Leave.", target: Scene::GameBoard, hotkey: "3" },
         ];
         match self {
-            Scene::MainMenu => MAIN,
-            Scene::CharacterCreation => CREATION,
-            Scene::GameBoard => BOARD,
-            Scene::Settings => SETTINGS,
-            Scene::Combat => COMBAT,
-            Scene::Dialog => DIALOG,
-            _ => &[],
+            Scene::MainMenu => MAIN, Scene::CharacterCreation => CREATION, Scene::GameBoard => BOARD,
+            Scene::Settings => SETTINGS, Scene::Combat => COMBAT, Scene::Dialog => DIALOG, _ => &[],
         }
     }
 }
 
-pub fn build_scene(
-    commands: &mut Commands,
-    theme: &Theme,
-    _assets: &AssetServer,
-    scene: Scene,
-    nav: &NavigationState,
-) {
-    let root = commands.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            padding: UiRect::all(Val::Px(20.0)),
-            row_gap: Val::Px(10.0),
-            flex_direction: FlexDirection::Column,
-            overflow: Overflow::clip(),
-            ..default()
-        },
-        BackgroundColor(theme.background),
-        UiRoot,
-    )).id();
-
-    commands.entity(root).with_children(|page| {
-        header(page, theme, scene);
-
+pub fn build_scene(commands: &mut Commands, theme: &Theme, _assets: &AssetServer, scene: Scene, nav: &NavigationState) {
+    commands.spawn((
+        Node { width: Val::Percent(100.0), height: Val::Percent(100.0), padding: UiRect::all(Val::Px(18.0)), flex_direction: FlexDirection::Column, row_gap: Val::Px(8.0), overflow: Overflow::clip(), ..default() },
+        BackgroundColor(theme.background), UiRoot,
+    )).with_children(|page| {
+        text(page, &format!("╔{}╗", "═".repeat(108)), 16.0, theme.accent);
+        text(page, &format!("║{:^108}║", scene.title()), 24.0, theme.text);
+        text(page, &format!("╚{}╝", "═".repeat(108)), 16.0, theme.accent);
         match scene {
-            Scene::Title => title_scene(page, theme),
-            Scene::MainMenu => main_menu(page, theme, nav.selected),
-            Scene::CharacterCreation => character_creation(page, theme, nav.selected),
-            Scene::GameBoard => game_board(page, theme, nav.selected),
-            Scene::StatsInventory => stats_inventory(page, theme),
-            Scene::Map => map_scene(page, theme),
-            Scene::Inventory => inventory_scene(page, theme),
-            Scene::Combat => combat_scene(page, theme, nav.selected),
-            Scene::Dialog => dialog_scene(page, theme, nav.selected),
-            Scene::Settings => settings_scene(page, theme, nav.selected),
-            Scene::Credits => credits_scene(page, theme),
-            Scene::Exit => exit_scene(page, theme),
+            Scene::Title => title(page, theme), Scene::MainMenu => main_menu(page, theme, nav.selected),
+            Scene::CharacterCreation => creation(page, theme, nav.selected), Scene::GameBoard => board(page, theme, nav.selected),
+            Scene::StatsInventory => stats(page, theme), Scene::Map => map(page, theme), Scene::Inventory => inventory(page, theme),
+            Scene::Combat => combat(page, theme, nav.selected), Scene::Dialog => dialog(page, theme, nav.selected),
+            Scene::Settings => settings(page, theme, nav.selected), Scene::Credits => credits(page, theme), Scene::Exit => exit(page, theme),
         }
-
-        footer(page, theme, scene);
+        spacer(page, 4.0);
+        text(page, "↑↓ / W S Navigate   ENTER Select   0-9 Quick Select   ESC Back   I Inventory   M Map   C Combat   D Dialogue", 13.0, theme.dim);
+        text(page, "D&D RPG ENGINE  ·  CP437 + UNICODE TEXTMODE  ·  FRONTEND WIREFRAME  ·  NAVIGATION ONLY", 11.0, theme.dim);
     });
 }
 
-fn header(parent: &mut ChildSpawner, theme: &Theme, scene: Scene) {
-    let label = format!("╔{}╗", "═".repeat(108));
-    text(parent, &label, 17.0, theme.accent);
-    text(parent, &format!("║{:^108}║", scene.title()), 26.0, theme.text);
-    text(parent, &format!("╚{}╝", "═".repeat(108)), 17.0, theme.accent);
-}
-
-fn footer(parent: &mut ChildSpawner, theme: &Theme, scene: Scene) {
-    let hotkeys = match scene {
-        Scene::GameBoard => "WASD / ↑↓←→ Move Nav   ENTER Select   I Inventory   M Map   C Combat   D Dialogue   ESC Back",
-        Scene::MainMenu | Scene::CharacterCreation | Scene::Settings | Scene::Combat | Scene::Dialog => {
-            "↑↓ / W S Navigate   ENTER Select   0-9 Quick Select   ESC Back   TAB Next"
-        }
-        _ => "ENTER Select   ESC Back   I Inventory   M Map   C Combat   D Dialogue",
-    };
-    text(parent, hotkeys, 14.0, theme.dim);
-    text(parent, "D&D RPG ENGINE  ·  FRONTEND WIREFRAME  ·  CP437 + UNICODE TEXTMODE  ·  NAVIGATION ONLY", 12.0, theme.dim);
-}
-
-fn title_scene(parent: &mut ChildSpawner, theme: &Theme) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 30.0, |p| {
-            text(p, "        ╔══════════════════════════╗", 18.0, theme.primary);
-            text(p, "        ║       D&D RPG ENGINE      ║", 22.0, theme.text);
-            text(p, "        ║        ╔╗  ╔╗  ╔╗        ║", 22.0, theme.accent);
-            text(p, "        ╚══════════════════════════╝", 18.0, theme.primary);
-            spacer(p, 12.0);
-            text(p, "    ", 8.0, theme.dim);
-            text(p, "    \"Not all those who wander are lost…\"", 19.0, theme.text);
-            spacer(p, 22.0);
-            selected_line(p, theme, true, "▶", "New Game");
-            text(p, "          Continue", 21.0, theme.text);
-            text(p, "          Settings", 21.0, theme.text);
-            text(p, "          Quit", 21.0, theme.text);
-            spacer(p, 18.0);
-            text(p, "v0.1.0  ·  16:9 TERMINAL FRONTEND", 12.0, theme.dim);
+fn title(p: &mut ChildSpawner, t: &Theme) {
+    hrow(p, |r| {
+        panel(r, t, 42.0, |q| {
+            text(q, "             ╔══════════════════╗", 17.0, t.primary);
+            text(q, "             ║    D&D RPG       ║", 22.0, t.text);
+            text(q, "             ║     ENGINE       ║", 22.0, t.text);
+            text(q, "             ╚══════════════════╝", 17.0, t.primary);
+            spacer(q, 10.0); text(q, "\"Not all those who wander are lost…\"", 17.0, t.text);
+            spacer(q, 16.0); text(q, "▶  NEW GAME", 21.0, t.accent); text(q, "   CONTINUE", 21.0, t.text); text(q, "   SETTINGS", 21.0, t.text); text(q, "   QUIT", 21.0, t.text);
         });
-        panel(layout, theme, 70.0, |p| {
-            text(p, "                         ▲", 18.0, theme.primary);
-            text(p, "                        ╱ ╲", 18.0, theme.primary);
-            text(p, "                 ╱╲    ╱███╲     ╱╲", 18.0, theme.primary);
-            text(p, "                ╱██╲  ╱█████╲   ╱██╲", 18.0, theme.primary);
-            text(p, "               ╱████╲ ║█████║  ╱████╲", 18.0, theme.primary);
-            text(p, "              ╱██████╲║█████║ ╱██████╲", 18.0, theme.primary);
-            text(p, "                 ║        ║        ║", 18.0, theme.dim);
-            text(p, "              ═══╩════════╩════════╩═══", 18.0, theme.dim);
-            spacer(p, 12.0);
-            text(p, "        ☼  A terminal-born fantasy adventure  ☼", 16.0, theme.accent);
-            text(p, "        ⚔  Explore · Fight · Discover · Survive  ⚔", 16.0, theme.text);
+        panel(r, t, 58.0, |q| {
+            text(q, "                 ▲", 18.0, t.primary); text(q, "                ╱ ╲", 18.0, t.primary);
+            text(q, "          ╱╲   ╱███╲   ╱╲", 18.0, t.primary); text(q, "         ╱██╲ ╱█████╲ ╱██╲", 18.0, t.primary);
+            text(q, "        ║████║║█████║║████║", 18.0, t.primary); text(q, "             ═══╩═══", 18.0, t.dim);
+            spacer(q, 10.0); text(q, "★  Adventure awaits…  ★", 17.0, t.accent); text(q, "⚔  Explore · Fight · Discover · Survive", 15.0, t.text);
         });
     });
 }
 
-fn main_menu(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 45.0, |p| {
-            text(p, "                    MAIN MENU", 22.0, theme.text);
-            spacer(p, 10.0);
-            let items = [
-                ("1", "New Adventure"),
-                ("2", "Continue"),
-                ("3", "Load Game"),
-                ("4", "Settings"),
-                ("5", "Credits"),
-                ("6", "Quit"),
-            ];
-            for (i, (key, label)) in items.iter().enumerate() {
-                selected_line(p, theme, selected == i, &format!("[{}]", key), label);
-            }
-        });
-        panel(layout, theme, 55.0, |p| {
-            text(p, "               ╲  DUNGEON REALMS  ╱", 18.0, theme.primary);
-            text(p, "                    ╱╲", 18.0, theme.primary);
-            text(p, "              ╱╲   ╱██╲   ╱╲", 18.0, theme.primary);
-            text(p, "             ╱██╲ ╱████╲ ╱██╲", 18.0, theme.primary);
-            text(p, "            ║████║║████║║████║", 18.0, theme.primary);
-            spacer(p, 18.0);
-            text(p, "                " , 10.0, theme.dim);
-            text(p, "                ★  Adventure awaits…  ★", 17.0, theme.accent);
-            spacer(p, 8.0);
-            text(p, "                ─────────────────────", 15.0, theme.dim);
-            text(p, "                [1] Create a character", 15.0, theme.text);
-            text(p, "                [2] Resume your quest", 15.0, theme.text);
-            text(p, "                [3] Load a saved journey", 15.0, theme.text);
-        });
+fn main_menu(p: &mut ChildSpawner, t: &Theme, selected: usize) {
+    hrow(p, |r| {
+        panel(r, t, 45.0, |q| { text(q, "MAIN MENU", 21.0, t.text); spacer(q, 7.0); for (i, (k,l)) in [("1","New Adventure"),("2","Continue"),("3","Load Game"),("4","Settings"),("5","Credits"),("6","Quit")].iter().enumerate() { selected_line(q,t,selected==i,k,l); } });
+        panel(r,t,55.0,|q| { text(q,"                ╱╲",18.0,t.primary); text(q,"          ╱╲   ╱██╲   ╱╲",18.0,t.primary); text(q,"         ║████║║████║║████║",18.0,t.primary); spacer(q,10.0); text(q,"        ★  Adventure awaits…  ★",17.0,t.accent); });
     });
 }
 
-fn character_creation(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 35.0, |p| {
-            text(p, "Create Your Hero", 20.0, theme.text);
-            spacer(p, 6.0);
-            let tabs = ["Race", "Class", "Background", "Abilities", "Appearance", "Name"];
-            for (i, label) in tabs.iter().enumerate() {
-                selected_line(p, theme, selected == i, "▶", label);
-            }
-            spacer(p, 12.0);
-            text(p, "[7] NEXT  →  ENTER", 14.0, theme.accent);
-            text(p, "[ESC] BACK", 14.0, theme.dim);
-        });
-        panel(layout, theme, 43.0, |p| {
-            text(p, "Select Race", 20.0, theme.text);
-            text(p, "┌──────────────────────────────┐", 16.0, theme.border);
-            for race in ["Human", "Elf", "Dwarf", "Halfling", "Dragonborn", "Tiefling", "Half-Elf", "Half-Orc"] {
-                text(p, &format!("│ {:<28} │", race), 16.0, theme.text);
-            }
-            text(p, "└──────────────────────────────┘", 16.0, theme.border);
-            spacer(p, 8.0);
-            text(p, "Human", 18.0, theme.accent);
-            text(p, "Versatile and ambitious. No special", 14.0, theme.text);
-            text(p, "bonuses, but excels on any path.", 14.0, theme.text);
-            spacer(p, 5.0);
-            text(p, "+1 STR   +1 CON", 16.0, theme.success);
-        });
-        panel(layout, theme, 22.0, |p| {
-            text(p, "     ╱╲", 16.0, theme.primary);
-            text(p, "    ╱██╲", 16.0, theme.primary);
-            text(p, "   ║████║", 16.0, theme.primary);
-            text(p, "    ╲██╱", 16.0, theme.primary);
-            text(p, "     ╲╱", 16.0, theme.primary);
-            spacer(p, 8.0);
-            text(p, "STR 14", 15.0, theme.text);
-            text(p, "DEX 12", 15.0, theme.text);
-            text(p, "CON 13", 15.0, theme.text);
-            text(p, "INT 10", 15.0, theme.text);
-            text(p, "WIS 11", 15.0, theme.text);
-            text(p, "CHA 08", 15.0, theme.text);
-        });
+fn creation(p: &mut ChildSpawner, t: &Theme, selected: usize) {
+    hrow(p,|r| {
+        panel(r,t,31.0,|q| { text(q,"Create Your Hero",19.0,t.text); for (i,l) in ["Race","Class","Background","Abilities","Appearance","Name"].iter().enumerate(){selected_line(q,t,selected==i,"▶",l);} spacer(q,8.0); text(q,"[7] NEXT  →  ENTER",14.0,t.accent); });
+        panel(r,t,47.0,|q| { text(q,"Select Race",19.0,t.text); text(q,"┌──────────────────────────────┐",14.0,t.border); for l in ["Human","Elf","Dwarf","Halfling","Dragonborn","Tiefling","Half-Elf","Half-Orc"]{text(q,&format!("│ {:<28} │",l),15.0,t.text);} text(q,"└──────────────────────────────┘",14.0,t.border); spacer(q,6.0); text(q,"Human",17.0,t.accent); text(q,"Versatile and ambitious.",14.0,t.text); text(q,"+1 STR   +1 CON",15.0,t.success); });
+        panel(r,t,22.0,|q| { text(q,"     ╱╲",16.0,t.primary); text(q,"    ╱██╲",16.0,t.primary); text(q,"   ║████║",16.0,t.primary); text(q,"    ╲██╱",16.0,t.primary); text(q,"STR 14",14.0,t.text); text(q,"DEX 12",14.0,t.text); text(q,"CON 13",14.0,t.text); text(q,"INT 10",14.0,t.text); text(q,"WIS 11",14.0,t.text); text(q,"CHA 08",14.0,t.text); });
     });
 }
 
-fn game_board(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 69.0, |p| {
-            text(p, "OLD MINES — LEVEL 2", 17.0, theme.accent);
-            for line in dungeon_map() {
-                text(p, line, 13.0, theme.text);
-            }
-            spacer(p, 6.0);
-            text(p, "▶ You see a goblin (Lv 2)", 15.0, theme.warning);
-            text(p, "▶ Press ENTER to act…", 14.0, theme.dim);
-        });
-        panel(layout, theme, 31.0, |p| {
-            text(p, "ARTHAS  Lv 3  Fighter", 18.0, theme.text);
-            text(p, "HP  ██████████████░░  28/28", 14.0, theme.success);
-            text(p, "MP  ██████████░░░░░░  10/10", 14.0, theme.primary);
-            text(p, "XP  ███████░░░░░░░░░  34/100", 14.0, theme.accent);
-            spacer(p, 6.0);
-            text(p, "Location: Old Mines — L2", 13.0, theme.text);
-            text(p, "────────────────────────────", 13.0, theme.dim);
-            selected_line(p, theme, selected == 0, "[I]", "Inventory / Stats");
-            selected_line(p, theme, selected == 1, "[M]", "World Map");
-            selected_line(p, theme, selected == 2, "[C]", "Combat");
-            selected_line(p, theme, selected == 3, "[D]", "Dialogue");
-        });
-    });
+fn board(p: &mut ChildSpawner,t:&Theme,selected:usize){
+    hrow(p,|r|{panel(r,t,70.0,|q|{text(q,"OLD MINES — LEVEL 2",16.0,t.accent); for l in dungeon(){text(q,l,11.0,t.text);} text(q,"▶ You see a goblin (Lv 2)",14.0,t.warning);}); panel(r,t,30.0,|q|{text(q,"ARTHAS  Lv 3  Fighter",17.0,t.text); text(q,"HP  ██████████████░░ 28/28",13.0,t.success); text(q,"MP  ██████████░░░░░░ 10/10",13.0,t.primary); text(q,"XP  ███████░░░░░░░░ 34/100",13.0,t.accent); spacer(q,6.0); for (i,(k,l)) in [(0,"[I] Inventory / Stats"),(1,"[M] World Map"),(2,"[C] Combat"),(3,"[D] Dialogue")].iter(){selected_line(q,t,selected==*i,"▶",l);} });});
 }
 
-fn stats_inventory(parent: &mut ChildSpawner, theme: &Theme) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 47.0, |p| {
-            text(p, "CHARACTER STATS", 18.0, theme.text);
-            text(p, "────────────────────────", 14.0, theme.dim);
-            for row in ["STR  14  (+2)", "DEX  12  (+1)", "CON  13  (+1)", "INT  10  (+0)", "WIS  11  (+0)", "CHA   8  (-1)"] {
-                text(p, row, 16.0, theme.text);
-            }
-            spacer(p, 8.0);
-            text(p, "Saving Throws", 15.0, theme.accent);
-            text(p, "Fort +4   Ref +2   Will +1", 14.0, theme.text);
-            spacer(p, 4.0);
-            text(p, "Skills", 15.0, theme.accent);
-            text(p, "Athletics +4   Stealth +3", 14.0, theme.text);
-            text(p, "Perception +1   Arcana +0", 14.0, theme.text);
-        });
-        panel(layout, theme, 53.0, |p| {
-            text(p, "INVENTORY", 18.0, theme.text);
-            text(p, "────────────────────────────────", 14.0, theme.dim);
-            text(p, "⚔  Longsword                 (e)", 16.0, theme.text);
-            text(p, "◈  Wooden Shield              (e)", 16.0, theme.text);
-            text(p, "♥  Healing Potion x3", 16.0, theme.success);
-            text(p, "◇  Rations x5", 16.0, theme.text);
-            text(p, "†  Torch x4", 16.0, theme.warning);
-            text(p, "★  Gold 125", 16.0, theme.accent);
-            spacer(p, 8.0);
-            text(p, "Weight: 12 / 50", 14.0, theme.dim);
-            text(p, "[I] Inventory  [M] Map  [ESC] Back", 13.0, theme.accent);
-        });
-    });
-}
+fn stats(p:&mut ChildSpawner,t:&Theme){hrow(p,|r|{panel(r,t,47.0,|q|{text(q,"CHARACTER STATS",17.0,t.text); for l in ["STR 14 (+2)","DEX 12 (+1)","CON 13 (+1)","INT 10 (+0)","WIS 11 (+0)","CHA 08 (-1)","Saving Throws  Fort +4  Ref +2  Will +1","Skills  Athletics +4  Stealth +3  Perception +1"]{text(q,l,14.0,t.text);}}); panel(r,t,53.0,|q|{text(q,"INVENTORY",17.0,t.text); for l in ["⚔ Longsword                 (e)","◈ Wooden Shield              (e)","♥ Healing Potion x3","◇ Rations x5","† Torch x4","★ Gold 125"]{text(q,l,14.0,t.text);} text(q,"Weight: 12 / 50",14.0,t.dim);});});}
 
-fn map_scene(parent: &mut ChildSpawner, theme: &Theme) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 78.0, |p| {
-            text(p, "WORLD MAP", 18.0, theme.text);
-            for line in world_map() {
-                text(p, line, 12.0, theme.text);
-            }
-        });
-        panel(layout, theme, 22.0, |p| {
-            text(p, "LEGEND", 17.0, theme.text);
-            text(p, "@  Player", 13.0, theme.accent);
-            text(p, "⌂  Town", 13.0, theme.text);
-            text(p, "☠  Dungeon", 13.0, theme.danger);
-            text(p, "▲  Forest", 13.0, theme.success);
-            text(p, "╱╲ Mountains", 13.0, theme.text);
-            text(p, "≈≈ Water", 13.0, theme.primary);
-            text(p, "✦  Point of Interest", 13.0, theme.warning);
-        });
-    });
-}
+fn map(p:&mut ChildSpawner,t:&Theme){hrow(p,|r|{panel(r,t,78.0,|q|{text(q,"WORLD MAP",17.0,t.text); for l in world(){text(q,l,11.0,t.text);}}); panel(r,t,22.0,|q|{text(q,"LEGEND",16.0,t.text); for l in ["@ Player","⌂ Town","☠ Dungeon","▲ Forest","╱╲ Mountains","≈≈ Water","✦ Point of Interest"]{text(q,l,13.0,t.text);}});});}
 
-fn inventory_scene(parent: &mut ChildSpawner, theme: &Theme) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 61.0, |p| {
-            text(p, "INVENTORY   │   EQUIPMENT   │   KEY ITEMS   │   LOOT", 16.0, theme.accent);
-            text(p, "────────────────────────────────────────────────────────", 13.0, theme.dim);
-            for item in [
-                "⚔ Longsword          1    5.0 lb    50 gp",
-                "◈ Wooden Shield       1    6.0 lb    40 gp",
-                "♥ Healing Potion      3    0.5 lb     25 gp",
-                "◇ Rations             5    0.2 lb      5 gp",
-                "† Torch               4    0.1 lb      2 gp",
-                "★ Gold              125       —      125 gp",
-            ] {
-                text(p, item, 15.0, theme.text);
-            }
-            spacer(p, 8.0);
-            text(p, "Total Weight: 12 / 50", 14.0, theme.dim);
-        });
-        panel(layout, theme, 39.0, |p| {
-            text(p, "⚔  LONGSWORD", 18.0, theme.accent);
-            text(p, "──────────────────", 13.0, theme.dim);
-            text(p, "A well-crafted longsword.", 14.0, theme.text);
-            text(p, "Balanced and reliable.", 14.0, theme.text);
-            spacer(p, 6.0);
-            text(p, "Damage: 1d8+2", 14.0, theme.danger);
-            text(p, "Weight: 5.0", 14.0, theme.text);
-            text(p, "Value: 50", 14.0, theme.accent);
-            spacer(p, 9.0);
-            text(p, "[E] Equip   [D] Drop   [ENTER] Details", 12.0, theme.dim);
-        });
-    });
-}
+fn inventory(p:&mut ChildSpawner,t:&Theme){hrow(p,|r|{panel(r,t,61.0,|q|{text(q,"INVENTORY │ EQUIPMENT │ KEY ITEMS │ LOOT",15.0,t.accent); for l in ["⚔ Longsword       1   5.0 lb   50 gp","◈ Wooden Shield    1   6.0 lb   40 gp","♥ Healing Potion   3   0.5 lb   25 gp","◇ Rations          5   0.2 lb    5 gp","† Torch            4   0.1 lb    2 gp","★ Gold           125        125 gp"]{text(q,l,13.0,t.text);} }); panel(r,t,39.0,|q|{text(q,"⚔ LONGSWORD",17.0,t.accent); text(q,"A well-crafted longsword.",14.0,t.text); text(q,"Damage: 1d8+2",14.0,t.danger); text(q,"Weight: 5.0",14.0,t.text); text(q,"Value: 50",14.0,t.accent);});});}
 
-fn combat_scene(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    row(parent, 1.0, |layout| {
-        panel(layout, theme, 28.0, |p| {
-            text(p, "          GOBLIN", 18.0, theme.success);
-            text(p, "             ╲▲╱", 17.0, theme.success);
-            text(p, "            ╔███╗", 17.0, theme.success);
-            text(p, "             ║█║", 17.0, theme.success);
-            text(p, "            ╱ ║ ╲", 17.0, theme.success);
-            text(p, "HP ██████████ 12/12", 13.0, theme.danger);
-        });
-        panel(layout, theme, 47.0, |p| {
-            text(p, "⚔ COMBAT / BATTLE ⚔", 21.0, theme.accent);
-            text(p, "Goblin  Lv 2", 16.0, theme.text);
-            text(p, "HP ██████████████ 12/12", 14.0, theme.danger);
-            spacer(p, 8.0);
-            for (i, (key, label)) in [("1", "ATTACK"), ("2", "DEFEND"), ("3", "SKILLS"), ("4", "ITEMS"), ("5", "FLEE")].iter().enumerate() {
-                selected_line(p, theme, selected == i, &format!("[{}]", key), label);
-            }
-        });
-        panel(layout, theme, 25.0, |p| {
-            text(p, "ARTHAS", 18.0, theme.text);
-            text(p, "Lv 3 Fighter", 14.0, theme.dim);
-            text(p, "HP ██████████████", 13.0, theme.success);
-            text(p, "28 / 28", 13.0, theme.text);
-            spacer(p, 12.0);
-            text(p, "⚔  Battle state is static", 12.0, theme.dim);
-            text(p, "No rules are executed.", 12.0, theme.dim);
-        });
-    });
-    panel_full(parent, theme, |p| {
-        text(p, "▶ You strike the Goblin for 6 damage!", 13.0, theme.text);
-        text(p, "▶ Goblin attacks for 3 damage!", 13.0, theme.danger);
-        text(p, "▶ Your turn.", 13.0, theme.accent);
-    });
-}
+fn combat(p:&mut ChildSpawner,t:&Theme,selected:usize){hrow(p,|r|{panel(r,t,27.0,|q|{text(q,"GOBLIN",17.0,t.success); text(q,"        ╲▲╱",17.0,t.success); text(q,"       ╔███╗",17.0,t.success); text(q,"HP ██████████ 12/12",12.0,t.danger);}); panel(r,t,48.0,|q|{text(q,"⚔ COMBAT / BATTLE ⚔",20.0,t.accent); for (i,l) in ["ATTACK","DEFEND","SKILLS","ITEMS","FLEE"].iter().enumerate(){selected_line(q,t,selected==i,&format!("[{}]",i+1),l);}}); panel(r,t,25.0,|q|{text(q,"ARTHAS Lv 3",17.0,t.text); text(q,"HP ██████████████",13.0,t.success); text(q,"28 / 28",13.0,t.text);});}); panel_full(p,t,|q|{text(q,"▶ Goblin attacks for 3 damage!",13.0,t.danger); text(q,"▶ Your turn.",13.0,t.accent);});}
 
-fn dialog_scene(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    panel_full(parent, theme, |p| {
-        row(p, 1.0, |layout| {
-            panel(layout, theme, 25.0, |q| {
-                text(q, "       ☼", 24.0, theme.primary);
-                text(q, "      ╱╲", 20.0, theme.primary);
-                text(q, "     ╱██╲", 20.0, theme.primary);
-                text(q, "    ╱████╲", 20.0, theme.primary);
-                text(q, "     ╲██╱", 20.0, theme.primary);
-            });
-            panel(layout, theme, 75.0, |q| {
-                text(q, "ELDER SEER", 18.0, theme.accent);
-                spacer(q, 5.0);
-                text(q, "\"The path you seek is not easy, young one.", 16.0, theme.text);
-                text(q, " To the east lies a dungeon filled with ancient", 16.0, theme.text);
-                text(q, " dangers. Are you prepared?\"", 16.0, theme.text);
-                spacer(q, 10.0);
-                for (i, label) in ["I am ready.", "Tell me more.", "Leave."] .iter().enumerate() {
-                    selected_line(q, theme, selected == i, &format!("{}.", i + 1), label);
-                }
-            });
-        });
-    });
-}
+fn dialog(p:&mut ChildSpawner,t:&Theme,selected:usize){panel_full(p,t,|q|{text(q,"Elder Seer",18.0,t.accent); text(q,"\"The path you seek is not easy, young one. To the east lies",15.0,t.text); text(q," a dungeon filled with ancient dangers. Are you prepared?\"",15.0,t.text); spacer(q,8.0); for (i,l) in ["I am ready.","Tell me more.","Leave."].iter().enumerate(){selected_line(q,t,selected==i,&format!("{}.",i+1),l);}});}
 
-fn settings_scene(parent: &mut ChildSpawner, theme: &Theme, selected: usize) {
-    panel_full(parent, theme, |p| {
-        text(p, "SETTINGS", 20.0, theme.text);
-        text(p, "────────────────────────────────────────", 14.0, theme.dim);
-        selected_line(p, theme, selected == 0, "[1]", "Audio");
-        selected_line(p, theme, selected == 1, "[2]", "Display");
-        selected_line(p, theme, selected == 2, "[3]", "Controls");
-        text(p, "", 7.0, theme.dim);
-        selected_line(p, theme, selected == 3, "[0]", "Back");
-        spacer(p, 14.0);
-        text(p, "Audio     ████████████  80%", 15.0, theme.text);
-        text(p, "Display   1600×900  ·  16:9  ·  Terminal Mode", 15.0, theme.text);
-        text(p, "Controls  W A S D  ·  Arrows  ·  Enter  ·  Esc", 15.0, theme.text);
-    });
-}
+fn settings(p:&mut ChildSpawner,t:&Theme,selected:usize){panel_full(p,t,|q|{text(q,"SETTINGS",19.0,t.text); for (i,l) in ["Audio","Display","Controls","Back"].iter().enumerate(){selected_line(q,t,selected==i,&format!("[{}]",if i==3{0}else{i+1}),l);} spacer(q,8.0); text(q,"Audio     ████████████ 80%",14.0,t.text); text(q,"Display   1600×900 · 16:9 · Terminal Mode",14.0,t.text); text(q,"Controls  W A S D · Arrows · Enter · Esc",14.0,t.text);});}
 
-fn credits_scene(parent: &mut ChildSpawner, theme: &Theme) {
-    panel_full(parent, theme, |p| {
-        text(p, "D&D RPG ENGINE FRONTEND", 24.0, theme.accent);
-        spacer(p, 8.0);
-        text(p, "Rust  ·  Bevy  ·  Winit", 18.0, theme.text);
-        text(p, "CP437-inspired Unicode / ANSI textmode presentation", 15.0, theme.text);
-        spacer(p, 14.0);
-        text(p, "Wireframe-only prototype. Navigation is intentionally", 15.0, theme.text);
-        text(p, "the only implemented behavior. No combat, persistence,", 15.0, theme.text);
-        text(p, "networking, or game rules are executed.", 15.0, theme.text);
-        spacer(p, 12.0);
-        text(p, "✓ Scene navigation", 14.0, theme.success);
-        text(p, "✓ Keyboard hotkeys", 14.0, theme.success);
-        text(p, "✓ 16:9 terminal UI system", 14.0, theme.success);
-        text(p, "✓ Unicode / textmode glyph system", 14.0, theme.success);
-    });
-}
+fn credits(p:&mut ChildSpawner,t:&Theme){panel_full(p,t,|q|{text(q,"D&D RPG ENGINE FRONTEND",22.0,t.accent); text(q,"Rust · Bevy · Winit",17.0,t.text); text(q,"CP437-inspired Unicode / ANSI textmode presentation",14.0,t.text); spacer(q,8.0); for l in ["✓ Scene navigation","✓ Keyboard hotkeys","✓ 16:9 terminal UI system","✓ Dense box / block / symbol glyphs"]{text(q,l,14.0,t.success);}});}
 
-fn exit_scene(parent: &mut ChildSpawner, theme: &Theme) {
-    panel_full(parent, theme, |p| {
-        text(p, "☠  END SESSION  ☠", 24.0, theme.danger);
-        spacer(p, 8.0);
-        text(p, "The Quit scene is a navigation wireframe only.", 16.0, theme.text);
-        spacer(p, 8.0);
-        text(p, "ENTER  →  Return to Title", 15.0, theme.accent);
-        text(p, "ESC    →  Return to Main Menu", 15.0, theme.dim);
-    });
-}
+fn exit(p:&mut ChildSpawner,t:&Theme){panel_full(p,t,|q|{text(q,"☠ END SESSION ☠",22.0,t.danger); text(q,"ENTER → Return to Title",15.0,t.accent); text(q,"ESC   → Return to Main Menu",15.0,t.dim);});}
 
-fn dungeon_map() -> Vec<&'static str> {
-    vec![
-        "┌──────────────────────────────────────────────────────────────────┐",
-        "│ ████████████        ░░░░░░░░░░        ████████████████████████ │",
-        "│ █          █        ░  ◇       ░        █                     █ │",
-        "│ █   @      █────────░───────────░────────█      ☠             █ │",
-        "│ █          █        ░     g     ░        █                     █ │",
-        "│ █████  █████        ░░░░░░░░░░░░        ████████████  ████████ │",
-        "│       ╲        ┌────────────────┐                 ╲           │",
-        "│        ╲───────│  ═══════════   │──────────────────╲         │",
-        "│                │       $        │                    ╲        │",
-        "│      ✦         │   ░░░░░░░░     │                     ╲       │",
-        "│                └──────┬─────────┘                      ╲      │",
-        "│                       │                                  !    │",
-        "│                  ╔════╧════╗                                   │",
-        "│                  ║  CHEST  ║          ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈    │",
-        "│                  ╚═════════╝          ≈  UNDERGROUND LAKE ≈    │",
-        "└──────────────────────────────────────────────────────────────────┘",
-    ]
-}
+fn hrow(parent:&mut ChildSpawner,build:impl FnOnce(&mut ChildSpawner)){parent.spawn(Node{width:Val::Percent(100.0),flex_direction:FlexDirection::Row,column_gap:Val::Px(10.0),flex_grow:1.0,min_height:Val::Px(0.0),..default()}).with_children(build);}
 
-fn world_map() -> Vec<&'static str> {
-    vec![
-        "┌───────────────────────────────────────────────────────────────────────┐",
-        "│ ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲      ╱╲          ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ │",
-        "│ ▲▲▲▲▲▲   ▲▲▲▲▲▲▲▲▲▲     ╱██╲         ▲▲▲▲▲▲▲▲▲▲▲▲▲▲ │",
-        "│ ▲▲▲      ▲▲▲▲▲▲▲▲▲▲    ╱████╲        ▲▲▲▲▲▲▲▲▲▲▲▲ │",
-        "│ ▲  ⌂ TOWN     ────────╱██████╲───────────────▲▲▲▲ │",
-        "│ ▲              ╲      ╲██████╱       ╲          ▲▲▲ │",
-        "│ ▲               ╲       ╲██╱          ╲            │",
-        "│ ▲▲▲▲▲▲▲▲        ╲        ║            ╲           │",
-        "│ ▲▲▲▲▲▲▲▲▲▲       ╲═══════╬═════════════╲        │",
-        "│ ▲▲▲▲▲▲▲▲▲▲▲              @                ☠ DUNGEON│",
-        "│       ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈  │",
-        "│       ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈  │",
-        "│              ✦ ANCIENT ROAD        ✦            │",
-        "└───────────────────────────────────────────────────────────────────────┘",
-    ]
-}
+fn panel(parent:&mut ChildSpawner,t:&Theme,width:f32,build:impl FnOnce(&mut ChildSpawner)){parent.spawn((Node{width:Val::Percent(width),height:Val::Percent(100.0),padding:UiRect::all(Val::Px(10.0)),flex_direction:FlexDirection::Column,border:UiRect::all(Val::Px(1.0)),overflow:Overflow::clip(),..default()},BorderColor::all(t.border),BackgroundColor(t.panel))).with_children(build);}
 
-fn row(parent: &mut ChildSpawner, width: f32, build: impl FnOnce(&mut ChildSpawner)) {
-    let id = parent.spawn(Node {
-        width: Val::Percent(100.0 * width),
-        flex_direction: FlexDirection::Row,
-        column_gap: Val::Px(12.0),
-        flex_grow: 1.0,
-        min_height: Val::Px(0.0),
-        ..default()
-    }).id();
-    parent.entity_mut(id).with_children(build);
-}
+fn panel_full(parent:&mut ChildSpawner,t:&Theme,build:impl FnOnce(&mut ChildSpawner)){parent.spawn((Node{width:Val::Percent(100.0),flex_grow:1.0,padding:UiRect::all(Val::Px(12.0)),flex_direction:FlexDirection::Column,border:UiRect::all(Val::Px(1.0)),overflow:Overflow::clip(),..default()},BorderColor::all(t.border),BackgroundColor(t.panel))).with_children(build);}
 
-fn panel(parent: &mut ChildSpawner, theme: &Theme, width_percent: f32, build: impl FnOnce(&mut ChildSpawner)) {
-    let id = parent.spawn((
-        Node {
-            width: Val::Percent(width_percent),
-            height: Val::Percent(100.0),
-            padding: UiRect::all(Val::Px(12.0)),
-            flex_direction: FlexDirection::Column,
-            border: UiRect::all(Val::Px(1.0)),
-            overflow: Overflow::clip(),
-            ..default()
-        },
-        BorderColor::all(theme.border),
-        BackgroundColor(theme.panel),
-    )).id();
-    parent.entity_mut(id).with_children(build);
-}
+fn selected_line(p:&mut ChildSpawner,t:&Theme,selected:bool,key:&str,label:&str){text(p,&format!("{} {:<4} {}",if selected{"▶"}else{" "},key,label),16.0,if selected{t.accent}else{t.text});}
+fn spacer(p:&mut ChildSpawner,h:f32){p.spawn(Node{height:Val::Px(h),width:Val::Percent(100.0),flex_shrink:0.0,..default()});}
+fn text(p:&mut ChildSpawner,s:&str,size:f32,color:Color){p.spawn((Text::new(s),TextFont{font:FontSource::Monospace,font_size:FontSize::Px(size),..default()},TextColor(color),TextLayout::new_with_justify(Justify::Left)));}
 
-fn panel_full(parent: &mut ChildSpawner, theme: &Theme, build: impl FnOnce(&mut ChildSpawner)) {
-    let id = parent.spawn((
-        Node {
-            width: Val::Percent(100.0),
-            flex_grow: 1.0,
-            padding: UiRect::all(Val::Px(14.0)),
-            flex_direction: FlexDirection::Column,
-            border: UiRect::all(Val::Px(1.0)),
-            overflow: Overflow::clip(),
-            ..default()
-        },
-        BorderColor::all(theme.border),
-        BackgroundColor(theme.panel),
-    )).id();
-    parent.entity_mut(id).with_children(build);
-}
-
-fn selected_line(parent: &mut ChildSpawner, theme: &Theme, selected: bool, marker: &str, label: &str) {
-    let prefix = if selected { "▶" } else { " " };
-    let line = format!("{} {:<4} {}", prefix, marker, label);
-    text(parent, &line, 17.0, if selected { theme.accent } else { theme.text });
-}
-
-fn spacer(parent: &mut ChildSpawner, height: f32) {
-    parent.spawn(Node {
-        height: Val::Px(height),
-        width: Val::Percent(100.0),
-        flex_shrink: 0.0,
-        ..default()
-    });
-}
-
-fn text(parent: &mut ChildSpawner, value: &str, size: f32, color: Color) {
-    parent.spawn((
-        Text::new(value),
-        TextFont {
-            font: FontSource::Monospace,
-            font_size: FontSize::Px(size),
-            ..default()
-        },
-        TextColor(color),
-        TextLayout::new_with_justify(Justify::Left),
-    ));
-}
+fn dungeon()->Vec<&'static str>{vec!["┌────────────────────────────────────────────────────────────┐","│ █████████     ░░░░░░░░     ██████████████████████████████ │","│ █ @     █─────░    ◇ ░─────█                 ☠           █ │","│ █       █     ░   g  ░     █                           █ │","│ █████████     ░░░░░░░░     ████████████  ██████████████ │","│      ╲           ┌────────────┐              !          │","│       ╲──────────│     $      │─────────────────╲      │","│                   └────────────┘                  ╲     │","│                         ╔══════╗                 ╲     │","│                         ║ CHEST║                  ╲    │","│                         ╚══════╝                   ≈≈≈ │","└────────────────────────────────────────────────────────────┘"]}
+fn world()->Vec<&'static str>{vec!["┌──────────────────────────────────────────────────────────────┐","│ ▲▲▲▲▲▲▲▲▲▲▲▲      ╱╲       ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ │","│ ▲▲  ⌂ TOWN ▲▲    ╱██╲      ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ │","│ ▲▲▲▲▲▲▲▲▲▲▲▲   ╱████╲───────╲       ✦               │","│       ╲────────╱██████╲───────╲──────────☠ DUNGEON    │","│        ╲       ╲████╱        @                         │","│ ▲▲▲▲▲▲▲╲════════║═══════════╝▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ │","│ ≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈≈ │","└──────────────────────────────────────────────────────────────┘"]}
